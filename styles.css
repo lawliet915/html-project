@@ -1,13 +1,12 @@
 body {
-  margin: 0;
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: white;
+  height: 100vh;
+  margin: 0;
 }
 
-.center-text {
+.center {
   color: red;
   font-size: 2rem;
 }
