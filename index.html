@@ -1,12 +1,41 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello World</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ボタンクリックカウンター</title>
+    <style>
+        /* 画面の中央に要素を配置するためのCSS */
+        body {
+            display: flex; /* Flexboxを使う */
+            justify-content: center; /* 水平方向の中央揃え */
+            align-items: center; /* 垂直方向の中央揃え */
+            min-height: 100vh; /* 画面の高さ全体を使う */
+            margin: 0; /* 余白をなくす */
+            background-color: #f0f0f0; /* 背景色 */
+            font-family: Arial, sans-serif; /* フォントの指定 */
+        }
+        /* ボタンのスタイル */
+        button {
+            padding: 20px 40px; /* 内側の余白 */
+            font-size: 24px; /* 文字サイズ */
+            cursor: pointer; /* マウスカーソルを指マークにする */
+            background-color: #007bff; /* ボタンの背景色 */
+            color: white; /* 文字色 */
+            border: none; /* 枠線をなくす */
+            border-radius: 8px; /* 角を丸くする */
+            transition: background-color 0.3s ease; /* ホバー時の変化を滑らかにする */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 影をつける */
+        }
+        /* ボタンにマウスが乗ったときのスタイル */
+        button:hover {
+            background-color: #0056b3; /* 色を少し濃くする */
+        }
+    </style>
 </head>
 <body>
-  <div class="center">Hello World!</div>
+    <button id="myButton">Click me!</button>
+
+    <script src="script.js"></script>
 </body>
 </html>
