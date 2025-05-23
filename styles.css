@@ -6,7 +6,7 @@ body {
   align-items: center;
 }
 
-.center-text {
+.center {
   color: red;
-  font-size: 2em;
+  font-size: 2rem;
 }
