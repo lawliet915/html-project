@@ -1,38 +1,57 @@
+/* src/App.css (既存のスタイルに追記または変更) */
 .App {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .App-header {
-  background-color: #282c34;
+  background-color: #f0f0f0; /* 背景色を少し明るく */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
+  color: #333; /* 文字色を濃いグレーに */
+}
+
+form div {
+  margin-bottom: 15px;
+  text-align: left; /* ラベルと入力を左揃えに */
+  width: 350px; /* フォーム全体の幅を調整 */
+}
+
+form label {
+  display: block; /* ラベルをブロック要素にして改行 */
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+form input[type="text"],
+form select {
+  width: calc(100% - 22px); /* paddingを考慮した幅 */
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+form button[type="submit"] {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff; /* ボタンの色 */
   color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
 }
 
-.App-link {
-  color: #61dafb;
+form button[type="submit"]:hover {
+  background-color: #0056b3;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.error-message {
+  color: red;
+  font-size: 0.9em;
+  margin-top: 5px;
 }
