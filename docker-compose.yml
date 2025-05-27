@@ -1,0 +1,22 @@
+# html-project/docker-compose.yml
+version: '3.8' # Docker Composeのバージョンを指定
+
+services:
+  db:
+    image: mysql:8.0 # 使用するMySQLのDockerイメージを指定 (8.0バージョン)
+    container_name: mysql_user_db
+    ports:
+      - "3306:3306" # ローカルの3306番ポートをコンテナの3306番ポートにマッピング
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword # MySQLのrootユーザーのパスワード
+      MYSQL_DATABASE: user_db # 作成するデータベース名
+      MYSQL_USER: dbuser # 作成する一般ユーザー名
+      MYSQL_PASSWORD: dbpassword # 一般ユーザーのパスワード
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d # 初期化用SQLファイルのマウントポイント
+      # - mysql_data:/var/lib/mysql # (任意) DBデータを永続化する場合
+    restart: always
+
+# (任意) DBデータを永続化するための名前付きボリューム定義
+# volumes:
+#   mysql_data:
