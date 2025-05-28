@@ -1,9 +1,20 @@
 // frontend/calculator-ui/src/types.ts
 
-// 課題8のものは残しても良いし、コメントアウトしても良い
-// export interface CalculationPayload { ... }
-// export interface CalculationResult { ... }
+// --- 課題8: 電卓アプリの型定義 (今回は使用しないためコメントアウト) ---
+/*
+export interface CalculationPayload {
+  num1: number;
+  num2: number;
+  operation: string; // "add", "subtract", "multiply", "divide"
+}
 
+export interface CalculationResult {
+  result?: number; // 結果は成功時のみ存在
+  error?: string;  // エラーはエラー時のみ存在
+}
+*/
+
+// --- 課題9: ユーザー登録フォームの型定義 ---
 export enum UserSex { // 性別用のenum (数値で扱う)
   Unknown = 0,
   Male = 1,

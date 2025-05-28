@@ -2,22 +2,22 @@
 package main
 
 import (
-	"database/sql" // SQLデータベース操作用
-	"encoding/json"
+	"database/sql"  // SQLデータベース操作用
+	"encoding/json" // JSONデータのエンコード/デコード用
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"time" // (任意) created_at/updated_at用
+	"os"   // 環境変数PORTの読み取り用
+	"time" // UserResponseのタイムスタンプ用 (任意)
 
 	_ "github.com/go-sql-driver/mysql" // MySQLドライバ (直接は使わないが初期化のために必要)
 	"github.com/google/uuid"           // UUID生成用
 )
 
-// DB接続情報を保持するグローバル変数
-var db *sql.DB
+// --- グローバル変数 ---
+var db *sql.DB // DB接続情報を保持
 
-// ユーザー登録リクエストの型
+// --- 課題9: ユーザー登録関連の型定義 ---
 type UserCreateRequest struct {
 	Name        string `json:"name"`
 	Age         int    `json:"age"`
@@ -25,7 +25,6 @@ type UserCreateRequest struct {
 	Description string `json:"description"`
 }
 
-// ユーザー情報レスポンスの型 (例として)
 type UserResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -36,8 +35,21 @@ type UserResponse struct {
 	UpdatedAt   time.Time `json:"updated_at"` // (任意)
 }
 
+// --- 課題8: 電卓関連の型定義 ---
+type CalculationRequest struct {
+	Num1      float64 `json:"num1"`
+	Num2      float64 `json:"num2"`
+	Operation string  `json:"operation"` // "add", "subtract", "multiply", "divide"
+}
+
+type CalculationResponse struct {
+	Result float64 `json:"result"`
+	Error  string  `json:"error,omitempty"` // エラーがある場合のみ含まれる
+}
+
+// --- 課題9: ユーザー登録用ハンドラ ---
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
-	// CORS対応 (課題8と同様)
+	// CORS対応
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -59,17 +71,15 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// UUIDを生成
 	userID := uuid.New().String()
 
-	// SQLインジェクション対策のため、プリペアドステートメントを使用
 	stmt, err := db.Prepare("INSERT INTO Users(id, name, age, sex, description) VALUES(?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("Error preparing statement: %v", err)
 		http.Error(w, "Server error: could not prepare statement", http.StatusInternalServerError)
 		return
 	}
-	defer stmt.Close() // 関数終了時にステートメントをクローズ
+	defer stmt.Close()
 
 	_, err = stmt.Exec(userID, req.Name, req.Age, req.Sex, req.Description)
 	if err != nil {
@@ -78,40 +88,95 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 登録成功のレスポンス (例としてIDを返す)
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated) // 201 Created
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"id": userID, "message": "User created successfully"})
 }
 
-// 課題8の calculateHandler は削除しても、残しておいても良い
-// func calculateHandler(w http.ResponseWriter, r *http.Request) { ... }
+// --- 課題8: 電卓用ハンドラ ---
+func calculateHandler(w http.ResponseWriter, r *http.Request) {
+	// CORS対応
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req CalculationRequest
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var result float64
+	var errorMsg string
+
+	switch req.Operation {
+	case "add":
+		result = req.Num1 + req.Num2
+	case "subtract":
+		result = req.Num1 - req.Num2
+	case "multiply":
+		result = req.Num1 * req.Num2
+	case "divide":
+		if req.Num2 == 0 {
+			errorMsg = "Error: Division by zero"
+		} else {
+			result = req.Num1 / req.Num2
+		}
+	default:
+		errorMsg = "Error: Invalid operation"
+	}
+
+	res := CalculationResponse{}
+	if errorMsg != "" {
+		res.Error = errorMsg
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		res.Result = result
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+}
+
+// --- main関数 ---
 func main() {
-	// データベース接続文字列 (DSN: Data Source Name)
-	// docker-compose.yml で設定したユーザー名、パスワード、データベース名を使用
-	// "db" は docker-compose.yml で定義したMySQLサービスのホスト名
+	// データベース接続設定
+	// ローカルからDockerコンテナのMySQLに接続するため、ホスト名を "localhost" に設定
 	dsn := "dbuser:dbpassword@tcp(localhost:3306)/user_db?parseTime=true"
 	var err error
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
 	}
-	defer db.Close() // main関数終了時にDB接続をクローズ
+	defer db.Close()
 
-	// 接続テスト
+	// DB接続テスト
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 	fmt.Println("Successfully connected to the database!")
 
-	http.HandleFunc("/users", createUserHandler) // 新しいエンドポイント
-	// http.HandleFunc("/calculate", calculateHandler) // 課題8のものを残す場合
+	// エンドポイントのルーティング設定
+	http.HandleFunc("/users", createUserHandler)     // 課題9のユーザー登録API
+	http.HandleFunc("/calculate", calculateHandler) // 課題8の電卓API
 
+	// サーバーポート設定と起動
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8080" // デプロイ環境以外でのデフォルトポート
 	}
 	fmt.Printf("Backend server starting on port %s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

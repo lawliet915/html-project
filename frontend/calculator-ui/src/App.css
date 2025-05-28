@@ -1,24 +1,61 @@
-/* frontend/calculator-ui/src/App.css の続きや変更 */
+/* frontend/calculator-ui/src/App.css */
+
+/* --- 基本的なAppのスタイル (mainブランチより) --- */
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+/* --- フォーム要素の基本スタイル (mainブランチより) --- */
+form div {
+  margin: 10px;
+}
+
+input, select, button {
+  font-size: 1.2em;
+  padding: 5px;
+  margin: 5px;
+}
+
+/* --- 電卓の計算結果表示用スタイル (mainブランチより) --- */
+.result {
+  margin-top: 20px;
+  font-size: 1.5em;
+  color: lightgreen;
+}
+
+/* --- ユーザー登録フォーム用のメッセージスタイル (db-integrationブランチより) --- */
 .message {
   margin-top: 15px;
   padding: 10px;
   border-radius: 4px;
+  font-size: 1em; /* mainブランチの.errorとフォントサイズ感を合わせるか、個別に調整 */
 }
+
 .success {
   color: #155724;
   background-color: #d4edda;
-  border-color: #c3e6cb;
+  border: 1px solid #c3e6cb; /* borderプロパティに統一 */
 }
-.error {
+
+.error { /* db-integrationブランチの詳細なエラー表示を採用し、mainのシンプルエラーを統合 */
   color: #721c24;
   background-color: #f8d7da;
-  border-color: #f5c6cb;
+  border: 1px solid #f5c6cb; /* borderプロパティに統一 */
+  /* mainブランチの .error にあった margin-top と font-size を適用するか検討 */
+  /* もし、mainブランチの .error が別用途なら、クラス名を変更して両方残すことも検討 */
+  /* ここでは、db-integration の方を優先し、必要なら別途調整 */
 }
+
+/* --- textarea のスタイル (db-integrationブランチより) --- */
 textarea {
-  width: calc(100% - 22px);
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-family: sans-serif; /* inputとフォントを合わせる */
-}

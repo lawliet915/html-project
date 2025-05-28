@@ -1,9 +1,10 @@
 // frontend/calculator-ui/src/App.tsx
 import React, { useState, FormEvent, ChangeEvent } from 'react';
 import './App.css';
-import { UserFormData, UserSex, UserCreateResponse } from './types'; // 新しい型をインポート
+import { UserFormData, UserSex, UserCreateResponse } from './types'; // 課題9の型をインポート
 
 function App() {
+  // 課題9のユーザー登録フォームの状態管理
   const initialFormData: UserFormData = {
     name: '',
     age: '',
@@ -15,32 +16,37 @@ function App() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 課題9のユーザー登録フォームの入力ハンドラ
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'sex' ? parseInt(value, 10) : value, // sexは数値に変換
+      // 'sex'フィールドの場合は値を数値に変換し、それ以外はそのまま文字列として設定
+      [name]: name === 'sex' ? parseInt(value, 10) : value,
     });
   };
 
+  // 課題9のユーザー登録フォームの送信ハンドラ
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMessage(null);
-    setError(null);
+    setMessage(null); // 前回のメッセージをクリア
+    setError(null);   // 前回のエラーをクリア
 
+    // 年齢を数値に変換し、バリデーション
     const ageNum = parseInt(formData.age, 10);
     if (isNaN(ageNum) || ageNum <= 0) {
       setError('有効な年齢を入力してください。');
       return;
     }
+    // 名前の必須チェック
     if (!formData.name.trim()) {
         setError('名前は必須です。');
         return;
     }
 
-
+    // バックエンドに送信するペイロードを作成
     const payload = {
       name: formData.name,
       age: ageNum,
@@ -49,8 +55,10 @@ function App() {
     };
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080'; // 課題8と同様
-      const response = await fetch(`${apiUrl}/users`, { // エンドポイントを /users に変更
+      // 環境変数からAPIのURLを取得、なければローカルの8080ポートをデフォルトとする
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+      // /users エンドポイントにPOSTリクエストを送信
+      const response = await fetch(`${apiUrl}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,20 +66,23 @@ function App() {
         body: JSON.stringify(payload),
       });
 
+      // レスポンスをJSONとしてパース
       const data: UserCreateResponse = await response.json();
 
+      // レスポンスのステータスやエラー内容を確認
       if (!response.ok || data.error) {
         setError(data.error || data.message || `エラー (HTTP: ${response.status})`);
       } else {
         setMessage(data.message || 'ユーザーが正常に登録されました。ID: ' + data.id);
-        setFormData(initialFormData); // フォームをリセット
+        setFormData(initialFormData); // 成功したらフォームをリセット
       }
     } catch (err) {
       console.error('APIリクエストエラー:', err);
-      setError('サーバーとの通信に失敗しました。');
+      setError('サーバーとの通信に失敗しました。バックエンドサーバーが起動しているか確認してください。');
     }
   };
 
+  // ユーザー登録フォームのJSX
   return (
     <div className="App">
       <header className="App-header">
@@ -91,7 +102,7 @@ function App() {
           <div>
             <label htmlFor="age">年齢:</label>
             <input
-              type="number" // type="number" に変更
+              type="number" // 年齢入力なので type="number" が適切
               id="age"
               name="age"
               value={formData.age}
@@ -109,10 +120,12 @@ function App() {
             >
               {/* UserSex enum から選択肢を動的に生成 */}
               {Object.entries(UserSex)
-                .filter(([key, value]) => !isNaN(Number(value))) // 数値のキーを除外 (enumの逆マッピング対策)
+                // enumの数値キーを除外 (TypeScriptのenumは逆マッピングも持つため)
+                .filter(([key, value]) => !isNaN(Number(value)))
                 .map(([key, value]) => (
                   <option key={value as number} value={value as number}>
-                    {key} {/* または日本語のラベルを別途用意 */}
+                    {key} {/* ここはUserSexのキー名 (Male, Femaleなど) が表示される */}
+                    {/* もし日本語で表示したい場合は、別途ラベルのマッピングを用意する */}
                   </option>
               ))}
             </select>
@@ -129,7 +142,9 @@ function App() {
           </div>
           <button type="submit">登録する</button>
         </form>
+        {/* 成功メッセージの表示 */}
         {message && <div className="message success">{message}</div>}
+        {/* エラーメッセージの表示 */}
         {error && <div className="message error">{error}</div>}
       </header>
     </div>
