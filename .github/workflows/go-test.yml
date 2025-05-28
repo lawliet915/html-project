@@ -1,0 +1,36 @@
+# .github/workflows/go-test.yml
+name: Go Backend Tests # ワークフローの名前
+
+# ワークフローがトリガーされるイベントを指定
+on:
+  push:
+    branches:
+      - ci # ciブランチへのpush時
+  pull_request:
+    branches:
+      - main # mainブランチへのpull_request作成・更新時 (任意)
+
+jobs:
+  test-backend: # ジョブのID (任意)
+    name: Run Go Backend Tests # ジョブの表示名
+    runs-on: ubuntu-latest # ジョブを実行する仮想環境 (Ubuntuの最新版)
+
+    # このジョブ内のステップが実行されるデフォルトの作業ディレクトリを指定
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      # ステップ1: リポジトリのコードをチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v4 # GitHubが提供する標準アクション
+
+      # ステップ2: Go言語環境のセットアップ
+      - name: Set up Go
+        uses: actions/setup-go@v5 # GitHubが提供する標準アクション
+        with:
+          go-version: '1.22' # あなたのプロジェクトで使用しているGoのバージョンに合わせてください
+
+      # ステップ3: Goのテストを実行
+      - name: Run Go Tests
+        run: go test -v # -v オプションで詳細なテスト結果を表示
