@@ -1,38 +1,64 @@
 // frontend/calculator-ui/src/App.tsx
 import React, { useState, FormEvent, ChangeEvent } from 'react';
 import './App.css';
-import { CalculationPayload, CalculationResult } from './types';
+import { UserFormData, UserSex, UserCreateResponse } from './types'; // 課題9の型をインポート
 
 function App() {
-  const [num1, setNum1] = useState<string>('');
-  const [num2, setNum2] = useState<string>('');
-  const [operation, setOperation] = useState<string>('add');
-  const [result, setResult] = useState<string | null>(null);
+  // 課題9のユーザー登録フォームの状態管理
+  const initialFormData: UserFormData = {
+    name: '',
+    age: '',
+    sex: UserSex.Unknown,
+    description: '',
+  };
+
+  const [formData, setFormData] = useState<UserFormData>(initialFormData);
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 課題9のユーザー登録フォームの入力ハンドラ
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      // 'sex'フィールドの場合は値を数値に変換し、それ以外はそのまま文字列として設定
+      [name]: name === 'sex' ? parseInt(value, 10) : value,
+    });
+  };
+
+  // 課題9のユーザー登録フォームの送信ハンドラ
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setResult(null); // 前回の結果をクリア
-    setError(null);  // 前回のエラーをクリア
+    setMessage(null); // 前回のメッセージをクリア
+    setError(null);   // 前回のエラーをクリア
 
-    const n1 = parseFloat(num1);
-    const n2 = parseFloat(num2);
-
-    if (isNaN(n1) || isNaN(n2)) {
-      setError('有効な数値を入力してください。');
+    // 年齢を数値に変換し、バリデーション
+    const ageNum = parseInt(formData.age, 10);
+    if (isNaN(ageNum) || ageNum <= 0) {
+      setError('有効な年齢を入力してください。');
       return;
     }
+    // 名前の必須チェック
+    if (!formData.name.trim()) {
+        setError('名前は必須です。');
+        return;
+    }
 
-    const payload: CalculationPayload = {
-      num1: n1,
-      num2: n2,
-      operation: operation,
+    // バックエンドに送信するペイロードを作成
+    const payload = {
+      name: formData.name,
+      age: ageNum,
+      sex: formData.sex, // UserSex enumの値 (数値)
+      description: formData.description,
     };
 
     try {
-      // バックエンドAPI (Goサーバー) のURLを指定
-      // Goサーバーが8080番ポートで動いていることを想定
-      const response = await fetch('http://localhost:8080/calculate', {
+      // 環境変数からAPIのURLを取得、なければローカルの8080ポートをデフォルトとする
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+      // /users エンドポイントにPOSTリクエストを送信
+      const response = await fetch(`${apiUrl}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,68 +66,86 @@ function App() {
         body: JSON.stringify(payload),
       });
 
-      const data: CalculationResult = await response.json();
+      // レスポンスをJSONとしてパース
+      const data: UserCreateResponse = await response.json();
 
-      if (!response.ok || data.error) { // HTTPエラーまたはAPIからのエラーメッセージ
-        setError(data.error || `エラーが発生しました (HTTP Status: ${response.status})`);
-        setResult(null);
+      // レスポンスのステータスやエラー内容を確認
+      if (!response.ok || data.error) {
+        setError(data.error || data.message || `エラー (HTTP: ${response.status})`);
       } else {
-        setResult(data.result !== undefined ? data.result.toString() : '計算結果なし');
-        setError(null);
+        setMessage(data.message || 'ユーザーが正常に登録されました。ID: ' + data.id);
+        setFormData(initialFormData); // 成功したらフォームをリセット
       }
     } catch (err) {
       console.error('APIリクエストエラー:', err);
       setError('サーバーとの通信に失敗しました。バックエンドサーバーが起動しているか確認してください。');
-      setResult(null);
     }
   };
 
+  // ユーザー登録フォームのJSX
   return (
     <div className="App">
       <header className="App-header">
-        <h1>React + Go 電卓</h1>
+        <h1>ユーザー登録フォーム</h1>
         <form onSubmit={handleSubmit}>
           <div>
+            <label htmlFor="name">名前:</label>
             <input
-              type="text" // textのまま扱い、送信時に数値変換
-              value={num1}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setNum1(e.target.value)}
-              placeholder="数値1"
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
               required
             />
           </div>
           <div>
+            <label htmlFor="age">年齢:</label>
+            <input
+              type="number" // 年齢入力なので type="number" が適切
+              id="age"
+              name="age"
+              value={formData.age}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="sex">性別:</label>
             <select
-              value={operation}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => setOperation(e.target.value)}
+              id="sex"
+              name="sex"
+              value={formData.sex}
+              onChange={handleInputChange}
             >
-              <option value="add">足し算 (+)</option>
-              <option value="subtract">引き算 (-)</option>
-              <option value="multiply">掛け算 (×)</option>
-              <option value="divide">割り算 (÷)</option>
+              {/* UserSex enum から選択肢を動的に生成 */}
+              {Object.entries(UserSex)
+                // enumの数値キーを除外 (TypeScriptのenumは逆マッピングも持つため)
+                .filter(([key, value]) => !isNaN(Number(value)))
+                .map(([key, value]) => (
+                  <option key={value as number} value={value as number}>
+                    {key} {/* ここはUserSexのキー名 (Male, Femaleなど) が表示される */}
+                    {/* もし日本語で表示したい場合は、別途ラベルのマッピングを用意する */}
+                  </option>
+              ))}
             </select>
           </div>
           <div>
-            <input
-              type="text"
-              value={num2}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setNum2(e.target.value)}
-              placeholder="数値2"
-              required
+            <label htmlFor="description">自己紹介文:</label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              rows={4}
             />
           </div>
-          <button type="submit">計算する</button>
+          <button type="submit">登録する</button>
         </form>
-        {result !== null && (
-          <div className="result">
-            <h2>計算結果: {result}</h2>
-          </div>
-        )}
-        {error && (
-          <div className="error">
-            <p>エラー: {error}</p>
-          </div>
-        )}
+        {/* 成功メッセージの表示 */}
+        {message && <div className="message success">{message}</div>}
+        {/* エラーメッセージの表示 */}
+        {error && <div className="message error">{error}</div>}
       </header>
     </div>
   );
