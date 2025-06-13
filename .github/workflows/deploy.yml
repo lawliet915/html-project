@@ -1,0 +1,51 @@
+# .github/workflows/deploy.yml
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main # mainブランチにプッシュされた時にデプロイを実行
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ステップ1: リポジトリのコードをチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ステップ2: EC2インスタンスにSSH接続してデプロイコマンドを実行
+      - name: Deploy to EC2 instance
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          passphrase: ${{ secrets.EC2_SSH_KEY_PASSPHRASE }} # パスフレーズ設定時のみ
+          script: |
+            # このスクリプトはEC2インスタンス上で実行される
+
+            # プロジェクトディレクトリに移動
+            cd ~/html-project
+
+            # Gitリポジトリの最新の変更を取得
+            git pull origin main
+
+            # Goバックエンドをビルドして再起動
+            cd backend
+            pkill -f 'main' || true 
+            go build -o main .
+            nohup ./main > backend.log 2>&1 &
+            cd ..
+
+            # Reactフロントエンドをビルド
+            cd frontend/calculator-ui
+            npm install
+            npm run build
+            cd ../..
+
+            # ビルドしたReactファイルをNginxの公開ディレクトリにコピー
+            # (このパスはEC2のNginx設定に合わせてください)
+            sudo cp -r frontend/calculator-ui/build/* /usr/share/nginx/html/
