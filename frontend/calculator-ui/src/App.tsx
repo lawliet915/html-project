@@ -1,7 +1,8 @@
 // frontend/calculator-ui/src/App.tsx
 import React, { useState, FormEvent, ChangeEvent } from 'react';
 import './App.css';
-import { CalculationPayload, CalculationResult } from './types';
+// types.tsは課題8のものと仮定
+import { CalculationPayload, CalculationResult } from './types'; 
 
 function App() {
   const [num1, setNum1] = useState<string>('');
@@ -30,9 +31,12 @@ function App() {
     };
 
     try {
-      // バックエンドAPI (Goサーバー) のURLを指定
-      // Goサーバーが8080番ポートで動いていることを想定
-      const response = await fetch('http://localhost:8080/calculate', {
+      // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+      // 変更点: APIのURLを相対パスに変更
+      // これにより、ブラウザは現在表示しているページのドメイン (EC2のIPアドレス)
+      // に対してリクエストを送信するようになります。
+      const response = await fetch('/calculate', {
+      // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +67,7 @@ function App() {
         <form onSubmit={handleSubmit}>
           <div>
             <input
-              type="text" // textのまま扱い、送信時に数値変換
+              type="text"
               value={num1}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setNum1(e.target.value)}
               placeholder="数値1"
