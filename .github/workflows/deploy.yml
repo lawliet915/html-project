@@ -1,5 +1,5 @@
 # .github/workflows/deploy.yml
-name: Deploy to EC2
+name: Deploy to EC2 with Self-Hosted Runner
 
 on:
   push:
@@ -8,44 +8,40 @@ on:
 
 jobs:
   deploy:
-    name: Build and Deploy
-    runs-on: ubuntu-latest
+    name: Build and Deploy on EC2
+    # 実行マシンとして、あなたが設定した自己ホストランナーを指定します
+    runs-on: self-hosted
 
     steps:
-      # ステップ1: リポジトリのコードをチェックアウト
+      # ステップ1: EC2サーバー（ランナーが動いている場所）の作業ディレクトリに、
+      # リポジトリの最新コードをダウンロードします。
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ステップ2: EC2インスタンスにSSH接続してデプロイコマンドを実行
-      - name: Deploy to EC2 instance
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          passphrase: ${{ secrets.EC2_SSH_KEY_PASSPHRASE }} # パスフレーズ設定時のみ
-          script: |
-            # このスクリプトはEC2インスタンス上で実行される
+      # ステップ2: デプロイ用のコマンドをEC2サーバー上で直接実行します。
+      # (SSH接続が不要になり、よりシンプルになります)
+      - name: Deploy Application
+        run: |
+          echo "デプロイを開始します..."
 
-            # プロジェクトディレクトリに移動
-            cd ~/html-project
+          # Goバックエンドのビルドと再起動
+          # ランナーの作業ディレクトリからの相対パスで指定します
+          echo "バックエンドを更新中..."
+          cd backend
+          pkill -f 'main' || true  # 実行中の古いサーバーがあれば停止
+          go build -o main .       # Goアプリをビルド
+          nohup ./main > backend.log 2>&1 & # 新しいサーバーをバックグラウンドで起動
+          cd ..
 
-            # Gitリポジトリの最新の変更を取得
-            git pull origin main
+          # Reactフロントエンドのビルド
+          echo "フロントエンドをビルド中..."
+          cd frontend/calculator-ui
+          npm install
+          npm run build
+          cd ../..
 
-            # Goバックエンドをビルドして再起動
-            cd backend
-            pkill -f 'main' || true 
-            go build -o main .
-            nohup ./main > backend.log 2>&1 &
-            cd ..
+          # ビルドしたReactファイルをNginxの公開ディレクトリにコピー
+          echo "フロントエンドのファイルを配置中..."
+          sudo cp -r frontend/calculator-ui/build/* /usr/share/nginx/html/
 
-            # Reactフロントエンドをビルド
-            cd frontend/calculator-ui
-            npm install
-            npm run build
-            cd ../..
-
-            # ビルドしたReactファイルをNginxの公開ディレクトリにコピー
-            # (このパスはEC2のNginx設定に合わせてください)
-            sudo cp -r frontend/calculator-ui/build/* /usr/share/nginx/html/
+          echo "デプロイが完了しました！"
